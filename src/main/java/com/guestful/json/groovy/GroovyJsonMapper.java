@@ -33,8 +33,6 @@ import java.util.Map;
  */
 public class GroovyJsonMapper implements JsonMapper {
 
-    private static final int BUFFER_SIZE = 8192;
-
     private final CustomizableJsonOutput serializer;
 
     public GroovyJsonMapper() {

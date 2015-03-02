@@ -29,6 +29,7 @@ import java.math.BigInteger;
 import java.net.URL;
 import java.util.*;
 import java.util.regex.Pattern;
+import java.util.stream.Stream;
 
 /**
  * Class responsible for the actual String serialization of the possible values of a JSON structure.
@@ -271,14 +272,14 @@ public class CustomizableJsonOutput {
 
             Serializer serializer = null;
             for (Map.Entry<Class<?>, Serializer<?>> entry : customTypes.entrySet()) {
-                if(entry.getKey().isAssignableFrom(objectClass)) {
+                if (entry.getKey().isAssignableFrom(objectClass)) {
                     serializer = entry.getValue();
                     break;
                 }
             }
-            if(serializer != null) {
+            if (serializer != null) {
                 serializer.write(object, buffer, this);
-            }else if (CharSequence.class.isAssignableFrom(objectClass)) { // Handle String, StringBuilder, GString and other CharSequence implemenations
+            } else if (CharSequence.class.isAssignableFrom(objectClass)) { // Handle String, StringBuilder, GString and other CharSequence implemenations
                 writeCharSequence((CharSequence) object, buffer);
             } else if (objectClass == Boolean.class) {
                 buffer.addBoolean((Boolean) object);
@@ -435,7 +436,7 @@ public class CustomizableJsonOutput {
             buffer.addChar('{');
             boolean firstItem = true;
             for (Map.Entry<?, ?> entry : map.entrySet()) {
-                if(ignoreNullMapValues && entry.getValue() == null) {
+                if (ignoreNullMapValues && entry.getValue() == null) {
                     continue;
                 }
 
@@ -604,6 +605,7 @@ public class CustomizableJsonOutput {
             else buffer.addNull();
         });
         addHookString(Locale.class);
+        addHook(Stream.class, (o, buffer, outputer) -> outputer.writeIterator(o.iterator(), buffer));
     }
 
 }
