@@ -36,6 +36,7 @@
 
     <properties>
         <github.name>module.json-serializer</github.name>
+        <groovy.version>2.4.1</groovy.version>
     </properties>
 
     <scm>
@@ -58,6 +59,33 @@
                 <groupId>com.mycila</groupId>
                 <artifactId>license-maven-plugin</artifactId>
             </plugin>
+            <plugin>
+                <groupId>org.codehaus.gmavenplus</groupId>
+                <artifactId>gmavenplus-plugin</artifactId>
+                <version>1.2</version>
+                <configuration>
+                    <verbose>true</verbose>
+                    <invokeDynamic>true</invokeDynamic>
+                </configuration>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>addSources</goal>
+                            <goal>addTestSources</goal>
+                            <goal>compile</goal>
+                            <goal>testCompile</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <dependencies>
+                    <dependency>
+                        <groupId>org.codehaus.groovy</groupId>
+                        <artifactId>groovy-all</artifactId>
+                        <version>${groovy.version}</version>
+                        <classifier>indy</classifier>
+                    </dependency>
+                </dependencies>
+            </plugin>
         </plugins>
     </build>
 
@@ -72,14 +100,14 @@
             <groupId>org.codehaus.groovy</groupId>
             <artifactId>groovy</artifactId>
             <classifier>indy</classifier>
-            <version>2.4.1</version>
+            <version>${groovy.version}</version>
             <optional>true</optional>
         </dependency>
         <dependency>
             <groupId>org.codehaus.groovy</groupId>
             <artifactId>groovy-json</artifactId>
             <classifier>indy</classifier>
-            <version>2.4.1</version>
+            <version>${groovy.version}</version>
             <optional>true</optional>
             <exclusions>
                 <exclusion>

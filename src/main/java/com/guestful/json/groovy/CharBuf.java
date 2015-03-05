@@ -15,9 +15,9 @@
  */
 package com.guestful.json.groovy;
 
-import groovy.json.JsonException;
 import groovy.json.internal.*;
 
+import javax.json.JsonException;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.io.Writer;
@@ -761,7 +761,7 @@ public class CharBuf extends Writer implements CharSequence {
 
     public CharBuf addBigInteger(BigInteger key) {
         if (bigICache == null) {
-            bigICache = new SimpleCache<BigInteger, char[]>(20, CacheType.LRU);
+            bigICache = new SimpleCache<>(20, CacheType.LRU);
         }
         char[] chars = bigICache.get(key);
 

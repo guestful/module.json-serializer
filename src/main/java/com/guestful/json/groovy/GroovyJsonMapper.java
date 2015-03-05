@@ -33,17 +33,17 @@ import java.util.Map;
  */
 public class GroovyJsonMapper implements JsonMapper {
 
-    private final CustomizableJsonOutput serializer;
+    private final GroovyJsonSerializer serializer;
 
     public GroovyJsonMapper() {
-        this.serializer = new CustomizableJsonOutput().ignoreNullMapValues();
+        this.serializer = new GroovyJsonSerializer().setIgnoreMapNullValues(true);
     }
 
-    public GroovyJsonMapper(CustomizableJsonOutput serializer) {
+    public GroovyJsonMapper(GroovyJsonSerializer serializer) {
         this.serializer = serializer;
     }
 
-    public CustomizableJsonOutput getSerializer() {
+    public GroovyJsonSerializer getSerializer() {
         return serializer;
     }
 
@@ -76,13 +76,13 @@ public class GroovyJsonMapper implements JsonMapper {
         }
     }
 
-    public <T> GroovyJsonMapper addSerializer(Class<T> type, CustomizableJsonOutput.Serializer<? super T> serializer) {
-        this.serializer.addHook(type, serializer);
+    public <T> GroovyJsonMapper addSerializer(Class<T> type, JsonTypeSerializer<? super T> serializer) {
+        this.serializer.addCustomSerializer(type, serializer);
         return this;
     }
 
     public GroovyJsonMapper addToStringSerializer(Class<?>... types) {
-        serializer.addHookString(types);
+        serializer.addToEscapedStringSerializer(types);
         return this;
     }
 
