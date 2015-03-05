@@ -82,7 +82,8 @@ public class GroovyJsonSerializer implements SerializerRepository {
             UUID.class,
             Locale.class,
             LocalTime.class,
-            LocalDate.class
+            LocalDate.class,
+            LocalDateTime.class
         );
 
         // finals
