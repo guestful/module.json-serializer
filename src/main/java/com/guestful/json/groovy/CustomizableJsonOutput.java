@@ -15,7 +15,10 @@
  */
 package com.guestful.json.groovy;
 
-import groovy.json.*;
+import groovy.json.JsonDelegate;
+import groovy.json.JsonException;
+import groovy.json.JsonLexer;
+import groovy.json.JsonToken;
 import groovy.json.internal.Chr;
 import groovy.lang.Closure;
 import groovy.util.Expando;
@@ -27,9 +30,14 @@ import java.io.StringReader;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.net.URL;
+import java.time.*;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeFormatterBuilder;
 import java.util.*;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
+
+import static java.time.temporal.ChronoField.*;
 
 /**
  * Class responsible for the actual String serialization of the possible values of a JSON structure.
@@ -43,30 +51,40 @@ import java.util.stream.Stream;
  */
 public class CustomizableJsonOutput {
 
-    /**
-     * Date formatter for outputting dates to a string
-     * that can be parsed back from JavaScript with:
-     * <code>Date.parse(stringRepresentation)</code>
-     */
-    private static final DateFormatThreadLocal dateFormatter = new DateFormatThreadLocal();
+    private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter
+        .ofPattern("yyyy-MM-dd'T'HH:mm:ssZ", Locale.US)
+        .withZone(ZoneOffset.UTC);
+
+    private static final DateTimeFormatter ISO_OFFSET_DATE_TIME = new DateTimeFormatterBuilder()
+        .parseCaseInsensitive()
+        .append(DateTimeFormatter.ISO_LOCAL_DATE)
+        .appendLiteral('T')
+        .appendValue(HOUR_OF_DAY, 2)
+        .appendLiteral(':')
+        .appendValue(MINUTE_OF_HOUR, 2)
+        .appendLiteral(':')
+        .appendValue(SECOND_OF_MINUTE, 2)
+        .appendFraction(MILLI_OF_SECOND, 3, 3, true)
+        .appendOffsetId()
+        .toFormatter();
 
     /**
      * @return "true" or "false" for a boolean value
      */
-    public String toJson(Boolean bool) {
+    private String toJson(Boolean bool) {
         CharBuf buffer = CharBuf.create(4);
         writeObject(bool, buffer); // checking null inside
 
         return buffer.toString();
     }
 
-    public static final String NULL_VALUE = "null";
+    private static final String NULL_VALUE = "null";
 
     /**
      * @return a string representation for a number
      * @throws groovy.json.JsonException if the number is infinite or not a number.
      */
-    public String toJson(Number n) {
+    private String toJson(Number n) {
         if (n == null) {
             return NULL_VALUE;
         }
@@ -81,7 +99,7 @@ public class CustomizableJsonOutput {
     /**
      * @return a JSON string representation of the character
      */
-    public String toJson(Character c) {
+    private String toJson(Character c) {
         CharBuf buffer = CharBuf.create(3);
         writeObject(c, buffer); // checking null inside
 
@@ -91,7 +109,7 @@ public class CustomizableJsonOutput {
     /**
      * @return a properly encoded string with escape sequences
      */
-    public String toJson(String s) {
+    private String toJson(String s) {
         if (s == null) {
             return NULL_VALUE;
         }
@@ -105,7 +123,7 @@ public class CustomizableJsonOutput {
     /**
      * @return a properly encoded string with escape sequences
      */
-    public String toJson(JsonValue jsonValue) {
+    private String toJson(JsonValue jsonValue) {
         if (jsonValue == null) {
             return NULL_VALUE;
         }
@@ -118,7 +136,7 @@ public class CustomizableJsonOutput {
      * @param date the date to format to a JSON string
      * @return a formatted date in the form of a string
      */
-    public String toJson(Date date) {
+    private String toJson(Date date) {
         if (date == null) {
             return NULL_VALUE;
         }
@@ -135,7 +153,7 @@ public class CustomizableJsonOutput {
      * @param cal the calendar to format to a JSON string
      * @return a formatted date in the form of a string
      */
-    public String toJson(Calendar cal) {
+    private String toJson(Calendar cal) {
         if (cal == null) {
             return NULL_VALUE;
         }
@@ -149,7 +167,7 @@ public class CustomizableJsonOutput {
     /**
      * @return the string representation of an uuid
      */
-    public String toJson(UUID uuid) {
+    private String toJson(UUID uuid) {
         CharBuf buffer = CharBuf.create(64);
         writeObject(uuid, buffer); // checking null inside
 
@@ -159,7 +177,7 @@ public class CustomizableJsonOutput {
     /**
      * @return the string representation of the URL
      */
-    public String toJson(URL url) {
+    private String toJson(URL url) {
         CharBuf buffer = CharBuf.create(64);
         writeObject(url, buffer); // checking null inside
 
@@ -169,7 +187,7 @@ public class CustomizableJsonOutput {
     /**
      * @return an object representation of a closure
      */
-    public String toJson(Closure closure) {
+    private String toJson(Closure closure) {
         if (closure == null) {
             return NULL_VALUE;
         }
@@ -183,7 +201,7 @@ public class CustomizableJsonOutput {
     /**
      * @return an object representation of an Expando
      */
-    public String toJson(Expando expando) {
+    private String toJson(Expando expando) {
         if (expando == null) {
             return NULL_VALUE;
         }
@@ -208,7 +226,7 @@ public class CustomizableJsonOutput {
     /**
      * @return a JSON object representation for a map
      */
-    public String toJson(Map m) {
+    private String toJson(Map m) {
         if (m == null) {
             return NULL_VALUE;
         }
@@ -222,7 +240,7 @@ public class CustomizableJsonOutput {
     /**
      * Serializes Number value and writes it into specified buffer.
      */
-    public void writeNumber(Class<?> numberClass, Number value, CharBuf buffer) {
+    private void writeNumber(Class<?> numberClass, Number value, CharBuf buffer) {
         if (numberClass == Integer.class) {
             buffer.addInt((Integer) value);
         } else if (numberClass == Long.class) {
@@ -264,7 +282,7 @@ public class CustomizableJsonOutput {
      * Serializes object and writes it into specified buffer.
      */
     @SuppressWarnings("unchecked")
-    public void writeObject(Object object, CharBuf buffer) {
+    private void writeObject(Object object, CharBuf buffer) {
         if (object == null) {
             buffer.addNull();
         } else {
@@ -324,12 +342,12 @@ public class CustomizableJsonOutput {
         }
     }
 
-    public static final char[] EMPTY_STRING_CHARS = Chr.array('"', '"');
+    private static final char[] EMPTY_STRING_CHARS = Chr.array('"', '"');
 
     /**
      * Serializes any char sequence and writes it into specified buffer.
      */
-    public void writeCharSequence(CharSequence seq, CharBuf buffer) {
+    private void writeCharSequence(CharSequence seq, CharBuf buffer) {
         if (seq.length() > 0) {
             buffer.addJsonEscapedString(seq.toString());
         } else {
@@ -340,14 +358,18 @@ public class CustomizableJsonOutput {
     /**
      * Serializes date and writes it into specified buffer.
      */
-    public void writeDate(Date date, CharBuf buffer) {
-        buffer.addQuoted(dateFormatter.get().format(date));
+    private void writeDate(Date date, CharBuf buffer) {
+        writeInstant(date.toInstant(), buffer);
+    }
+
+    private void writeInstant(Instant o, CharBuf buffer) {
+        buffer.addQuoted(DATE_TIME_FORMATTER.format(o));
     }
 
     /**
      * Serializes array and writes it into specified buffer.
      */
-    public void writeArray(Class<?> arrayClass, Object array, CharBuf buffer) {
+    private void writeArray(Class<?> arrayClass, Object array, CharBuf buffer) {
         buffer.addChar('[');
         if (Object[].class.isAssignableFrom(arrayClass)) {
             Object[] objArray = (Object[]) array;
@@ -426,12 +448,12 @@ public class CustomizableJsonOutput {
         buffer.addChar(']');
     }
 
-    public static final char[] EMPTY_MAP_CHARS = {'{', '}'};
+    private static final char[] EMPTY_MAP_CHARS = {'{', '}'};
 
     /**
      * Serializes map and writes it into specified buffer.
      */
-    public void writeMap(Map<?, ?> map, CharBuf buffer) {
+    private void writeMap(Map<?, ?> map, CharBuf buffer) {
         if (!map.isEmpty()) {
             buffer.addChar('{');
             boolean firstItem = true;
@@ -459,12 +481,12 @@ public class CustomizableJsonOutput {
         }
     }
 
-    public static final char[] EMPTY_LIST_CHARS = {'[', ']'};
+    private static final char[] EMPTY_LIST_CHARS = {'[', ']'};
 
     /**
      * Serializes iterator and writes it into specified buffer.
      */
-    public void writeIterator(Iterator<?> iterator, CharBuf buffer) {
+    private void writeIterator(Iterator<?> iterator, CharBuf buffer) {
         if (iterator.hasNext()) {
             buffer.addChar('[');
             Object it = iterator.next();
@@ -486,7 +508,7 @@ public class CustomizableJsonOutput {
      * @param jsonPayload
      * @return a pretty representation of JSON payload.
      */
-    public static String prettyPrint(String jsonPayload) {
+    private static String prettyPrint(String jsonPayload) {
         int indentSize = 0;
         // Just a guess that the pretty view will take a 20 percent more than original.
         final CharBuf output = CharBuf.create((int) (jsonPayload.length() * 0.2));
@@ -556,7 +578,7 @@ public class CustomizableJsonOutput {
      *
      * @return indent with the specified size.
      */
-    public static char[] getIndent(int indentSize, Map<Integer, char[]> indentCache) {
+    private static char[] getIndent(int indentSize, Map<Integer, char[]> indentCache) {
         char[] indent = indentCache.get(indentSize);
         if (indent == null) {
             indent = new char[indentSize];
@@ -572,6 +594,20 @@ public class CustomizableJsonOutput {
 
     private final Map<Class<?>, Serializer<?>> customTypes = new LinkedHashMap<>();
     private boolean ignoreNullMapValues = false;
+
+    private static Duration toDuration(Period p) {
+        if (p.getMonths() > 0) throw new IllegalArgumentException(p.toString());
+        if (p.getYears() > 0) throw new IllegalArgumentException(p.toString());
+        return Duration.ofDays(p.getDays());
+    }
+
+    private static String getShortName(DayOfWeek d) {
+        return d.name().substring(0, 3);
+    }
+
+    private static String getShortName(Month m) {
+        return m.name().substring(0, 3);
+    }
 
     public <T> CustomizableJsonOutput addHook(Class<T> type, Serializer<? super T> serializer) {
         customTypes.put(type, serializer);
@@ -590,7 +626,7 @@ public class CustomizableJsonOutput {
         return this;
     }
 
-    public static final Serializer<?> TO_STRING = (o, buffer, outputer) -> buffer.addQuoted(o.toString());
+    private static final Serializer<?> TO_STRING = (o, buffer, outputer) -> buffer.addQuoted(o.toString());
 
     public static interface Serializer<T> {
         void write(T o, CharBuf buffer, CustomizableJsonOutput outputer);
@@ -606,6 +642,16 @@ public class CustomizableJsonOutput {
         });
         addHookString(Locale.class);
         addHook(Stream.class, (o, buffer, outputer) -> outputer.writeIterator(o.iterator(), buffer));
+        addHookString(LocalTime.class);
+        addHook(DayOfWeek.class, (o, buffer, outputer) -> buffer.addQuoted(getShortName(o)));
+        addHook(Month.class, (o, buffer, outputer) -> buffer.addQuoted(getShortName(o)));
+        addHook(ZoneId.class, (o, buffer, outputer) -> buffer.addQuoted(o.getId()));
+        addHook(LocalDate.class, (o, buffer, outputer) -> buffer.addQuoted(o.toString()));
+        addHook(LocalTime.class, (o, buffer, outputer) -> buffer.addQuoted(o.toString()));
+        addHook(OffsetDateTime.class, (o, buffer, outputer) -> buffer.addQuoted(o.format(ISO_OFFSET_DATE_TIME)));
+        addHook(ZonedDateTime.class, (o, buffer, outputer) -> buffer.addQuoted(o.toOffsetDateTime().format(ISO_OFFSET_DATE_TIME)));
+        addHook(Duration.class, (o, buffer, outputer) -> outputer.writeNumber(Long.class, o.toMillis(), buffer));
+        addHook(Period.class, (o, buffer, outputer) -> outputer.writeNumber(Long.class, toDuration(o).toMillis(), buffer));
     }
 
 }
