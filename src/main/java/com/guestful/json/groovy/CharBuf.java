@@ -547,7 +547,10 @@ public class CharBuf extends Writer implements CharSequence {
     }
 
     public final CharBuf addJsonFieldName(char[] chars) {
-        int _location = location;
+        addJsonEscapedString(chars);
+        add(':');
+        return this;
+        /*int _location = location;
         char[] _buffer = buffer;
         int _capacity = capacity;
 
@@ -575,7 +578,7 @@ public class CharBuf extends Writer implements CharSequence {
             return this;
         } catch (Exception ex) {
             return Exceptions.handle(CharBuf.class, Exceptions.sputs(toDebugString(), new String(chars), "_location", _location), ex);
-        }
+        }*/
     }
 
     public final CharBuf addQuoted(String str) {

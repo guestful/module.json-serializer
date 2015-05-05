@@ -47,6 +47,12 @@ class GroovyJsonSerializerTest {
         return th;
     }
 
+
+    @Test
+    void testEscapedKeys() {
+        assert serializer.toJson(['my\nkey': 'my\nvalue']) == '{"my\\nkey":"my\\nvalue"}'
+    }
+
     @Test
     void testBooleanValues() {
         assert serializer.toJson(Boolean.TRUE) == "true"
