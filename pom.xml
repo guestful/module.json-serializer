@@ -28,7 +28,7 @@
 
     <groupId>com.guestful.module</groupId>
     <artifactId>guestful.module.json-serializer</artifactId>
-    <version>1.5</version>
+    <version>1.6-SNAPSHOT</version>
     <packaging>jar</packaging>
     <name>Guestful :: Module :: JSON Serializer</name>
     <inceptionYear>2013</inceptionYear>
@@ -43,7 +43,7 @@
         <connection>scm:git:git@github.com:guestful/${github.name}.git</connection>
         <developerConnection>scm:git:git@github.com:guestful/${github.name}.git</developerConnection>
         <url>https://github.com/guestful/${github.name}</url>
-        <tag>guestful.module.json-serializer-1.5</tag>
+        <tag>HEAD</tag>
     </scm>
 
     <repositories>
